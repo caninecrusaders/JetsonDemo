@@ -1,4 +1,5 @@
 #include "vision.hpp"
+#include <math.h>
 using namespace std;
 
 
@@ -33,6 +34,11 @@ void drawPoint (cv::Mat &img, cv::Point &p, cv::Scalar &color) {
     cv::circle(img, p, 4, color, 4);
 }
 
+double angleToTarget(double x, double y, double imageWidth, double FOV) {
+    double centerX = (imageWidth/2) - 0.5;
+    return atan((x - centerX) / (imageWidth / (2 * tan(FOV / 2))));
+}
+
 //checks for contour validity
 bool is_valid (contour_type &contour) {
     bool valid = true; //start out assuming its valid, disprove this later
@@ -65,7 +71,7 @@ bool is_valid (contour_type &contour) {
     return valid;
 }
 
-VisionResultsPackage calculate(const cv::Mat &bgr, cv::Mat &processedImage){
+VisionResultsPackage calculate(const cv::Mat &bgr, cv::Mat &processedImage, HSVMinMax hsvFilter){
     ui64 time_began = millis_since_epoch();
     //blur the image
     cv::blur(bgr, bgr, cv::Size(5,5));
@@ -81,8 +87,8 @@ VisionResultsPackage calculate(const cv::Mat &bgr, cv::Mat &processedImage){
     //threshold on green (light ring color)
     cv::Mat greenThreshed;
     cv::inRange(hsvMat,
-                cv::Scalar(MIN_HUE, MIN_SAT, MIN_VAL),
-                cv::Scalar(MAX_HUE, MAX_SAT, MAX_VAL),
+                cv::Scalar(hsvFilter.minH, hsvFilter.minS, hsvFilter.minV),
+                cv::Scalar(hsvFilter.maxH, hsvFilter.maxS, hsvFilter.maxV),
                 greenThreshed);
 
     processedImage = greenThreshed.clone();
@@ -107,6 +113,10 @@ VisionResultsPackage calculate(const cv::Mat &bgr, cv::Mat &processedImage){
         return processingFailurePackage(time_began);
     }
     
+    //find the largest contour in the image
+    contour_type largest;
+    double largestArea = 0;
+
     //store the convex hulls of any valid contours
     vector<contour_type> valid_contour_hulls;
     for (int i = 0; i < (int)contours.size(); i++) {
@@ -114,6 +124,11 @@ VisionResultsPackage calculate(const cv::Mat &bgr, cv::Mat &processedImage){
         if (is_valid (contour)) {
             contour_type hull;
             cv::convexHull(contour, hull);
+            double curArea = cv::contourArea(hull, true);
+            if (curArea > largestArea){
+                largestArea = curArea;
+                largest = hull;
+            }
             valid_contour_hulls.push_back(hull);
         }
     }
@@ -123,17 +138,6 @@ VisionResultsPackage calculate(const cv::Mat &bgr, cv::Mat &processedImage){
     
     if (numContours < 1) { //definitely did not find 
         return processingFailurePackage(time_began);
-    }
-
-    //find the largest contour in the image
-    contour_type largest;
-    double largestArea = 0;
-    for (int i = 0; i < numContours; i++){
-        double curArea = cv::contourArea(valid_contour_hulls[i], true);
-        if (curArea > largestArea){
-            largestArea = curArea;
-            largest = valid_contour_hulls[i];
-        }
     }
 
     //get the points of corners
@@ -189,10 +193,12 @@ VisionResultsPackage calculate(const cv::Mat &bgr, cv::Mat &processedImage){
     copyPointData (lr, res.lr);
     copyPointData (center, res.midPoint);
 
+
     res.upperWidth = top_width;
     res.lowerWidth = bottom_width;
     res.leftHeight = left_height;
     res.rightHeight = right_height;
+    res.angleToTarget = angleToTarget(centerX, centerY, 480, 0.86538);
 
     res.sampleHue = hue;
     res.sampleSat = sat;
@@ -233,3 +239,5 @@ VisionResultsPackage processingFailurePackage(ui64 time) {
 
     return failureResult;
 }
+
+

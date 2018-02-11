@@ -86,6 +86,8 @@ int main () {
         printf ("Data header:\n%s", 
             VisionResultsPackage::createCSVHeader().c_str());
     }
+    
+    HSVMinMax *hsv = new HSVMinMax();
 
     //take each frame from the pipeline
     for (long long frame = 0; ; frame++) {
@@ -98,7 +100,7 @@ int main () {
         else if (frame == 50) {
             flash_good_settings();
         }
-
+        // hsv.setValues(myNetworkTable -> get
         bool success = mycam.grabFrame();
 
         if (verbose) printf ("frame #%lld\n", frame);
@@ -107,9 +109,9 @@ int main () {
             IplImage *img = mycam.retrieveFrame(0); //store frame in IplImage
             cameraFrame = cv::cvarrToMat (img); //convert IplImage to cv::Mat
             processedImage = cameraFrame;
-                
+
             //process the image, put the information into network tables
-            VisionResultsPackage info = calculate(cameraFrame, processedImage);
+            VisionResultsPackage info = calculate(cameraFrame, processedImage, *hsv);
 
             pushToNetworkTables (info);
           

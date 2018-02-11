@@ -16,7 +16,7 @@ struct VisionResultsPackage {
 	cv::Point midPoint;
     cv::Point ul, ur, ll, lr;
 	double upperWidth, lowerWidth;
-	double leftHeight, rightHeight;
+	double leftHeight, rightHeight, angleToTarget;
 	int sampleHue, sampleSat, sampleVal;
 
     static string createCSVHeader () {
@@ -29,7 +29,8 @@ struct VisionResultsPackage {
             "LL_x,LL_y,"
             "LR_x,LR_y,"
             "UpperWidth,LowerWidth,"
-            "LeftHeight,RightHeight";
+            "LeftHeight,RightHeight,"
+            "AngleToTarget";
     }
 
     string createCSVLine () {
@@ -42,24 +43,47 @@ struct VisionResultsPackage {
         ss << ll.x << "," << ll.y << ",";
         ss << lr.x << "," << lr.y << ",";
         ss << upperWidth << "," << lowerWidth << ",";
-        ss << leftHeight << "," << rightHeight;
+        ss << leftHeight << "," << rightHeight << ",";
+        ss << angleToTarget;
         return ss.str();
+    }
+};
+
+struct HSVMinMax {
+    int minH, maxH, minS, maxS, minV, maxV;
+    HSVMinMax() 
+    {
+        minH = 55;
+        maxH = 65;
+        minS = 0;
+        maxS = 255;
+        minV = 50;
+        maxV = 255;
+    }
+    void setValues(int _minH, int _maxH, int _minS, int _maxS, int _minV, int _maxV)
+    {
+        minH = _minH;
+        maxH = _maxH;
+        minS = _minS;
+        maxS = _maxS;
+        minV = _minV;
+        maxV = _maxV;
     }
 };
 
 typedef std::vector<cv::Point> contour_type;
 
 const int RES_X = 320, RES_Y = 240;
-const int MIN_HUE = 55, MAX_HUE = 65;
-const int MIN_SAT = 0, MAX_SAT = 255;
-const int MIN_VAL = 50, MAX_VAL = 255;
+// const int MIN_HUE = 55, MAX_HUE = 65;
+// const int MIN_SAT = 0, MAX_SAT = 255;
+// const int MIN_VAL = 50, MAX_VAL = 255;
 
 const double
 MIN_AREA = 0.001, MAX_AREA = 1000000,
 MIN_WIDTH = 0, MAX_WIDTH = 100000, //rectangle width
 MIN_HEIGHT = 0, MAX_HEIGHT = 100000, //rectangle height
-MIN_RECT_RAT = 1.5, MAX_RECT_RAT = 8, //rect height / rect width
-MIN_AREA_RAT = 0.85, MAX_AREA_RAT = 100; //cvxhull area / contour area
+MIN_RECT_RAT = 0.78, MAX_RECT_RAT = 1.25, //rect height / rect width
+MIN_AREA_RAT = 0.9, MAX_AREA_RAT = 1.1; //cvxhull area / contour area
 
 /**
  * Processes the raw image provided in order to determine interesting values
@@ -70,7 +94,7 @@ MIN_AREA_RAT = 0.85, MAX_AREA_RAT = 100; //cvxhull area / contour area
  * @param processedImage results of OpenCV image pipeline
  * @return results of vision processing (e.g location of target, timestamp)
  */ 
-VisionResultsPackage calculate(const cv::Mat &bgr, cv::Mat &processedImage);
+VisionResultsPackage calculate(const cv::Mat &bgr, cv::Mat &processedImage, HSVMinMax hsvFilter);
 void drawOnImage (cv::Mat &img, VisionResultsPackage info);
 VisionResultsPackage processingFailurePackage(ui64 time);
 
