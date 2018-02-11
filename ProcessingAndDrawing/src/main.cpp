@@ -5,7 +5,8 @@
 using namespace std;
 
 shared_ptr<NetworkTable> myNetworkTable; //our networktable for reading/writing
-string netTableAddress = "192.168.1.34"; //address of the rio
+shared_ptr<NetworkTable> hsvTable; //our networktable for reading/writing
+string netTableAddress = "10.49.82.58"; //address of the rio
 
 //useful for testing OpenCV drawing to see you can modify an image
 void fillCircle (cv::Mat img, int rad, cv::Point center);
@@ -24,7 +25,7 @@ int
 bitrate = 600000, //kbit/sec over network
 port_stream = 5806, //destination port for raw image
 port_thresh = 5805; //destination port for thresholded image
-string ip = "192.168.1.34"; //destination ip
+string ip = "10.49.82.28"; //destination ip
 
 string tableName = "CVResultsTable";
 
@@ -53,6 +54,7 @@ int main () {
     NetworkTable::Initialize();
     if (verbose) printf ("Initialized table\n");
     myNetworkTable = NetworkTable::GetTable(tableName);
+    hsvTable = NetworkTable::GetTable("hsvFilter");
 
     //open camera using CvCapture_GStreamer class
     CvCapture_GStreamer mycam;
@@ -100,7 +102,7 @@ int main () {
         else if (frame == 50) {
             flash_good_settings();
         }
-        // hsv.setValues(myNetworkTable -> get
+        hsv->setValuesFromNetworkTable(hsvTable);
         bool success = mycam.grabFrame();
 
         if (verbose) printf ("frame #%lld\n", frame);

@@ -60,14 +60,15 @@ struct HSVMinMax {
         minV = 50;
         maxV = 255;
     }
-    void setValues(int _minH, int _maxH, int _minS, int _maxS, int _minV, int _maxV)
+    void setValuesFromNetworkTable(shared_ptr<NetworkTable> table)
     {
-        minH = _minH;
-        maxH = _maxH;
-        minS = _minS;
-        maxS = _maxS;
-        minV = _minV;
-        maxV = _maxV;
+        printf("setting values from network table");
+        minH = table -> GetNumber("minH", 55);
+        maxH = table -> GetNumber("maxH", 65);
+        minS = table -> GetNumber("minS", 0);
+        maxS = table -> GetNumber("maxS", 255);
+        minV = table -> GetNumber("minV", 50);
+        maxV = table -> GetNumber("maxV", 255);
     }
 };
 

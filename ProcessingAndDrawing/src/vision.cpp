@@ -10,7 +10,7 @@ cv::Scalar MY_BLUE (255, 0, 0);
 cv::Scalar MY_GREEN (0, 255, 0);
 cv::Scalar MY_PURPLE (255, 0, 255);
 cv::Scalar GUIDE_DOT(255,255,0);
-cv::Point TEST_POINT(120,120);
+cv::Point TEST_POINT(160,120);
 
 //utility functions
 void copyPointData (const cv::Point &pSource, cv::Point &pTarget) {
