@@ -6,7 +6,7 @@ using namespace std;
 
 shared_ptr<NetworkTable> myNetworkTable; //our networktable for reading/writing
 shared_ptr<NetworkTable> hsvTable; //our networktable for reading/writing
-string netTableAddress = "10.49.82.58"; //address of the rio
+string netTableAddress = "10.49.80.2"; //address of the rio
 
 //useful for testing OpenCV drawing to see you can modify an image
 void fillCircle (cv::Mat img, int rad, cv::Point center);
@@ -21,11 +21,12 @@ framerate = 15,
 mjpeg = false; //mjpeg is not better than just grabbing a raw image in this case
 
 //network parameters
-int
-bitrate = 600000, //kbit/sec over network
+int bitrate = 600000, //kbit/sec over network
 port_stream = 5806, //destination port for raw image
 port_thresh = 5805; //destination port for thresholded image
-string ip = "10.49.82.28"; //destination ip
+// string ip = "192.168.0.104"; //destination ip matt's computer
+string ip = "192.168.0.101"; //destination ip vision computer
+// string ip = "10.49.80.28"; //destination ip roborio
 
 string tableName = "CVResultsTable";
 
@@ -33,13 +34,13 @@ bool verbose = true;
 
 void flash_good_settings() {
     char setting_script[100];
-    sprintf (setting_script, "bash good_settings.sh %d", device);
+    sprintf (setting_script, "bash ./src/good_settings.sh %d", device);
     system (setting_script);
 }
 
 void flash_bad_settings() {
     char setting_script[100];
-    sprintf (setting_script, "bash bad_settings.sh %d", device);
+    sprintf (setting_script, "bash ./src/bad_settings.sh %d", device);
     system (setting_script);
 }
 

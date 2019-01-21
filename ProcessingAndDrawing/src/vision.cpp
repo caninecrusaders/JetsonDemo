@@ -18,16 +18,17 @@ void copyPointData (const cv::Point &pSource, cv::Point &pTarget) {
     pTarget.y = pSource.y;
 }
 
-inline int getHue (cv::Mat &img, int r, int c) {
-    return img.at<cv::Vec3b>(r, c)[0];
+inline int getVal (cv::Mat &img, int x, int y) {
+    //img.at is (y,x) instead of (x,y)
+    return img.at<cv::Vec3b>(y, x)[0];
 }
 
-inline int getSat (cv::Mat &img, int r, int c) {
-    return img.at<cv::Vec3b>(r, c)[1];
+inline int getSat (cv::Mat &img, int x, int y) {
+    return img.at<cv::Vec3b>(y, x)[1];
 }
 
-inline int getVal (cv::Mat &img, int r, int c) {
-    return img.at<cv::Vec3b>(r, c)[2];
+inline int getHue (cv::Mat &img, int x, int y) {
+    return img.at<cv::Vec3b>(y, x)[2];
 }
 
 void drawPoint (cv::Mat &img, cv::Point &p, cv::Scalar &color) {
@@ -41,34 +42,35 @@ double angleToTarget(double x, double y, double imageWidth, double FOV) {
 
 //checks for contour validity
 bool is_valid (contour_type &contour) {
-    bool valid = true; //start out assuming its valid, disprove this later
+//     bool valid = true; //start out assuming its valid, disprove this later
 
-    //find bounding rect & convex hull
-    cv::Rect rect = cv::boundingRect(contour);
-    contour_type hull;
-    cv::convexHull(contour, hull);
+//     //find bounding rect & convex hull
+//     cv::Rect rect = cv::boundingRect(contour);
+//     contour_type hull;
+//     cv::convexHull(contour, hull);
 
-    double totalArea = (RES_X * RES_Y);
+//     double totalArea = (RES_X * RES_Y);
 
-    //calculate relevant ratios & values
-    double area = cv::contourArea(contour) / totalArea;
-    //double perim = cv::arcLength(hull, true);
+//     //calculate relevant ratios & values
+//     double area = cv::contourArea(contour) / totalArea;
+//     //double perim = cv::arcLength(hull, true);
 
-    double convex_area = cv::contourArea(hull) / totalArea;
+//     double convex_area = cv::contourArea(hull) / totalArea;
 
-    double width = rect.width, height = rect.height;
+//     double width = rect.width, height = rect.height;
 
-    double area_rat = area / convex_area;
-    double rect_rat = height / width;
+//     double area_rat = area / convex_area;
+//     double rect_rat = height / width;
 
-  //check ratios & values for validity
-    if (area < MIN_AREA || area > MAX_AREA) valid = false;
-    if (area_rat < MIN_AREA_RAT || area_rat > MAX_AREA_RAT) valid = false;
-    if (rect_rat < MIN_RECT_RAT || rect_rat > MAX_RECT_RAT) valid = false;
-    if (width < MIN_WIDTH || width > MAX_WIDTH) valid = false;
-    if (height < MIN_HEIGHT || height > MAX_HEIGHT) valid = false;
+//   //check ratios & values for validity
+//     if (area < MIN_AREA || area > MAX_AREA) valid = false;
+//     if (area_rat < MIN_AREA_RAT || area_rat > MAX_AREA_RAT) valid = false;
+//     if (rect_rat < MIN_RECT_RAT || rect_rat > MAX_RECT_RAT) valid = false;
+//     if (width < MIN_WIDTH || width > MAX_WIDTH) valid = false;
+//     if (height < MIN_HEIGHT || height > MAX_HEIGHT) valid = false;
 
-    return valid;
+    // return valid;
+    return true;
 }
 
 VisionResultsPackage calculate(const cv::Mat &bgr, cv::Mat &processedImage, HSVMinMax hsvFilter){
@@ -87,8 +89,8 @@ VisionResultsPackage calculate(const cv::Mat &bgr, cv::Mat &processedImage, HSVM
     //threshold on green (light ring color)
     cv::Mat greenThreshed;
     cv::inRange(hsvMat,
-                cv::Scalar(hsvFilter.minH, hsvFilter.minS, hsvFilter.minV),
-                cv::Scalar(hsvFilter.maxH, hsvFilter.maxS, hsvFilter.maxV),
+                cv::Scalar(hsvFilter.minV, hsvFilter.minS, hsvFilter.minH),
+                cv::Scalar(hsvFilter.maxV, hsvFilter.maxS, hsvFilter.maxH),
                 greenThreshed);
 
     processedImage = greenThreshed.clone();
@@ -106,17 +108,16 @@ VisionResultsPackage calculate(const cv::Mat &bgr, cv::Mat &processedImage, HSVM
             cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
     }
     catch (...) { //TODO: change this to the error that occurs when there are no contours
-        return processingFailurePackage(time_began);
+        return processingFailurePackage(time_began, hue, sat, val);
     }
 
     if (contours.size() < 1) { //definitely did not find 
-        return processingFailurePackage(time_began);
+        return processingFailurePackage(time_began, hue, sat, val);
     }
     
     //find the largest contour in the image
     contour_type largest;
     double largestArea = 0;
-
     //store the convex hulls of any valid contours
     vector<contour_type> valid_contour_hulls;
     for (int i = 0; i < (int)contours.size(); i++) {
@@ -137,7 +138,7 @@ VisionResultsPackage calculate(const cv::Mat &bgr, cv::Mat &processedImage, HSVM
     printf ("Num contours: %d\n", numContours);
     
     if (numContours < 1) { //definitely did not find 
-        return processingFailurePackage(time_began);
+        return processingFailurePackage(time_began, hue, sat, val);
     }
 
     //get the points of corners
@@ -175,7 +176,11 @@ VisionResultsPackage calculate(const cv::Mat &bgr, cv::Mat &processedImage, HSVM
 
     vector<contour_type> largestArr;
     largestArr.push_back(largest);
-    cv::drawContours(processedImage, largestArr , 0, MY_GREEN, 2);
+    // for (int i = 0; i < (int)valid_contour_hulls.size(); i++)
+    // {
+    //     cv::drawContours(processedImage, valid_contour_hulls[i], 0, MY_GREEN, 2);
+    // }
+    cv::drawContours(processedImage, largest, 0, MY_GREEN, 2);
 
     double top_width = ur.x - ul.x;
     double bottom_width = lr.x - ll.x;
@@ -217,7 +222,7 @@ void drawOnImage (cv::Mat &img, VisionResultsPackage info) {
     drawPoint (img, info.midPoint, MY_PURPLE);
 }
 
-VisionResultsPackage processingFailurePackage(ui64 time) {
+VisionResultsPackage processingFailurePackage(ui64 time, int h, int s, int v) {
     VisionResultsPackage failureResult;
     failureResult.timestamp = time;
     failureResult.valid = false;
@@ -233,9 +238,9 @@ VisionResultsPackage processingFailurePackage(ui64 time) {
     failureResult.leftHeight = -1;
     failureResult.rightHeight = -1;
 
-    failureResult.sampleHue = -1;
-    failureResult.sampleSat = -1;
-    failureResult.sampleVal = -1;
+    failureResult.sampleHue = h;
+    failureResult.sampleSat = s;
+    failureResult.sampleVal = v;
 
     return failureResult;
 }

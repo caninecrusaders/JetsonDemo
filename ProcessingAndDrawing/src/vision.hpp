@@ -21,6 +21,9 @@ struct VisionResultsPackage {
 
     static string createCSVHeader () {
         return 
+            "Hue,"
+            "Sat,"
+            "Val,"
             "Timestamp,"
             "Valid,"
             "Midpoint_x,Midpoint_y,"
@@ -35,6 +38,10 @@ struct VisionResultsPackage {
 
     string createCSVLine () {
         stringstream ss;
+        ss << sampleHue << ",";
+        ss << sampleSat << ",";
+        ss << sampleVal << ",";
+        ss << timestamp << ",";
         ss << timestamp << ",";
         ss << valid << ","; //either 0 or 1
         ss << midPoint.x << "," << midPoint.y << ",";
@@ -53,21 +60,21 @@ struct HSVMinMax {
     int minH, maxH, minS, maxS, minV, maxV;
     HSVMinMax() 
     {
-        minH = 55;
-        maxH = 65;
-        minS = 0;
+        minH = 90;
+        maxH = 155;
+        minS = 170;
         maxS = 255;
-        minV = 50;
-        maxV = 255;
+        minV = 20;
+        maxV = 100;
     }
     void setValuesFromNetworkTable(shared_ptr<NetworkTable> table)
     {
-        minH = table -> GetNumber("minH", 55);
-        maxH = table -> GetNumber("maxH", 65);
-        minS = table -> GetNumber("minS", 0);
-        maxS = table -> GetNumber("maxS", 255);
-        minV = table -> GetNumber("minV", 50);
-        maxV = table -> GetNumber("maxV", 255);
+        minH = table -> GetNumber("minH", minH);
+        maxH = table -> GetNumber("maxH", maxH);
+        minS = table -> GetNumber("minS", minS);
+        maxS = table -> GetNumber("maxS", maxS);
+        minV = table -> GetNumber("minV", minV);
+        maxV = table -> GetNumber("maxV", maxV);
 	printf("setting values from network table %d", minS);
     }
 };
@@ -83,7 +90,7 @@ const double
 MIN_AREA = 0.001, MAX_AREA = 1000000,
 MIN_WIDTH = 0, MAX_WIDTH = 100000, //rectangle width
 MIN_HEIGHT = 0, MAX_HEIGHT = 100000, //rectangle height
-MIN_RECT_RAT = 0.78, MAX_RECT_RAT = 1.25, //rect height / rect width
+MIN_RECT_RAT = 0.55, MAX_RECT_RAT = 1.25, //rect height / rect width
 MIN_AREA_RAT = 0.9, MAX_AREA_RAT = 1.1; //cvxhull area / contour area
 
 /**
@@ -97,6 +104,6 @@ MIN_AREA_RAT = 0.9, MAX_AREA_RAT = 1.1; //cvxhull area / contour area
  */ 
 VisionResultsPackage calculate(const cv::Mat &bgr, cv::Mat &processedImage, HSVMinMax hsvFilter);
 void drawOnImage (cv::Mat &img, VisionResultsPackage info);
-VisionResultsPackage processingFailurePackage(ui64 time);
+VisionResultsPackage processingFailurePackage(ui64 time, int h, int s, int v);
 
 #endif
