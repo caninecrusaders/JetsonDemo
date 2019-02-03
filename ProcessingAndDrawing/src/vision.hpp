@@ -60,7 +60,7 @@ struct HSVMinMax {
     int minH, maxH, minS, maxS, minV, maxV;
     HSVMinMax() 
     {
-        minH = 90;
+        minH = 60;
         maxH = 155;
         minS = 170;
         maxS = 255;
@@ -75,13 +75,13 @@ struct HSVMinMax {
         maxS = table -> GetNumber("maxS", maxS);
         minV = table -> GetNumber("minV", minV);
         maxV = table -> GetNumber("maxV", maxV);
-	printf("setting values from network table %d", minS);
+	    // printf("setting values from network table %d", minS);
     }
 };
 
 typedef std::vector<cv::Point> contour_type;
 
-const int RES_X = 320, RES_Y = 240;
+const int RES_X = 1280, RES_Y = 720;
 // const int MIN_HUE = 55, MAX_HUE = 65;
 // const int MIN_SAT = 0, MAX_SAT = 255;
 // const int MIN_VAL = 50, MAX_VAL = 255;

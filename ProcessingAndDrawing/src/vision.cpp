@@ -1,6 +1,12 @@
 #include "vision.hpp"
+#include "tapeTarget.hpp"
+#include "tapeTargetPair.hpp"
 #include <math.h>
+
 using namespace std;
+
+# define PI 3.14159265358979323846
+
 
 
 //Set up constants
@@ -10,7 +16,10 @@ cv::Scalar MY_BLUE (255, 0, 0);
 cv::Scalar MY_GREEN (0, 255, 0);
 cv::Scalar MY_PURPLE (255, 0, 255);
 cv::Scalar GUIDE_DOT(255,255,0);
-cv::Point TEST_POINT(160,120);
+cv::Point TEST_POINT(640,360);
+std::vector<TapeTarget*> leftTargets;
+std::vector<TapeTarget*> rightTargets;
+std::vector<TapeTargetPair*> validTargetPairs;
 
 //utility functions
 void copyPointData (const cv::Point &pSource, cv::Point &pTarget) {
@@ -41,36 +50,29 @@ double angleToTarget(double x, double y, double imageWidth, double FOV) {
 }
 
 //checks for contour validity
-bool is_valid (contour_type &contour) {
-//     bool valid = true; //start out assuming its valid, disprove this later
-
-//     //find bounding rect & convex hull
-//     cv::Rect rect = cv::boundingRect(contour);
-//     contour_type hull;
-//     cv::convexHull(contour, hull);
-
-//     double totalArea = (RES_X * RES_Y);
-
-//     //calculate relevant ratios & values
-//     double area = cv::contourArea(contour) / totalArea;
-//     //double perim = cv::arcLength(hull, true);
-
-//     double convex_area = cv::contourArea(hull) / totalArea;
-
-//     double width = rect.width, height = rect.height;
-
-//     double area_rat = area / convex_area;
-//     double rect_rat = height / width;
-
-//   //check ratios & values for validity
-//     if (area < MIN_AREA || area > MAX_AREA) valid = false;
-//     if (area_rat < MIN_AREA_RAT || area_rat > MAX_AREA_RAT) valid = false;
-//     if (rect_rat < MIN_RECT_RAT || rect_rat > MAX_RECT_RAT) valid = false;
-//     if (width < MIN_WIDTH || width > MAX_WIDTH) valid = false;
-//     if (height < MIN_HEIGHT || height > MAX_HEIGHT) valid = false;
-
-    // return valid;
-    return true;
+bool is_valid (contour_type &hull) {
+    bool valid = true; //start out assuming its valid, disprove this later
+    cv::RotatedRect rotatedRect = minAreaRect(hull);
+    // target angle is 14.5
+    // or 345.5
+    // width to height ratio of tape is 2:5.5 inch
+    double angle = rotatedRect.angle * -1;
+    double ratio = rotatedRect.size.width / rotatedRect.size.height;
+    // printf ("Ratio: %lf\n", ratio);
+    // printf ("Angle: %lf\n", angle);
+    // .3636363636 repeating is the target ratio
+    if (angle > 7 && angle < 16 && ratio > .1 && ratio < .4) {
+        // right side
+        printf("THIS IS A RIGHT CONTOUR!!!!!!!\n");
+        rightTargets.push_back(new TapeTarget(hull, rotatedRect));
+    } else if (angle > 74 && angle < 83 && ratio > 2.5 && ratio < 10) {
+        // left side
+        printf("THIS IS A LEFT CONTOUR!!!!!!!---------------------------\n");
+        leftTargets.push_back(new TapeTarget(hull, rotatedRect));
+    } else {
+        valid = false;
+    }
+    return valid;
 }
 
 VisionResultsPackage calculate(const cv::Mat &bgr, cv::Mat &processedImage, HSVMinMax hsvFilter){
@@ -80,6 +82,10 @@ VisionResultsPackage calculate(const cv::Mat &bgr, cv::Mat &processedImage, HSVM
     cv::Mat hsvMat;
     //convert to hsv
     cv::cvtColor(bgr, hsvMat, cv::COLOR_BGR2HSV);
+
+    leftTargets = std::vector<TapeTarget*>();
+    rightTargets = std::vector<TapeTarget*>();
+    validTargetPairs = std::vector<TapeTargetPair*>();
 
     //store HSV values at a given test point to send back
     int hue = getHue(hsvMat, TEST_POINT.x, TEST_POINT.y);
@@ -117,99 +123,148 @@ VisionResultsPackage calculate(const cv::Mat &bgr, cv::Mat &processedImage, HSVM
     
     //find the largest contour in the image
     contour_type largest;
-    double largestArea = 0;
+    // double largestArea = 0;
     //store the convex hulls of any valid contours
     vector<contour_type> valid_contour_hulls;
     for (int i = 0; i < (int)contours.size(); i++) {
         contour_type contour = contours[i];
-        if (is_valid (contour)) {
-            contour_type hull;
-            cv::convexHull(contour, hull);
-            double curArea = cv::contourArea(hull, true);
-            if (curArea > largestArea){
-                largestArea = curArea;
-                largest = hull;
-            }
+        contour_type hull;
+        cv::convexHull(contour, hull);
+        if (is_valid(hull)) {
             valid_contour_hulls.push_back(hull);
         }
     }
+    printf ("#Left contours: %d\n", (int)leftTargets.size());
+    printf ("#Right contours: %d\n", (int)rightTargets.size());
+    TapeTarget* rightTarget;
+    TapeTarget* leftTarget;
+    TapeTarget* closestTarget;
+    int minDistance, dist;
+    for (int i = 0; i < (int)leftTargets.size(); i++) {
+        leftTarget = leftTargets[i];
+        minDistance = INT_MAX;
+        for (int j = 0; j < (int)rightTargets.size(); j++) {
+            rightTarget = rightTargets[j];
+            // if right is to the right of the left
+            if (leftTarget->center.x < rightTarget->center.x)
+            {
+                //find the closest right contour
+                //could have issue if actual closest is not detected
+                dist = leftTarget->distanceToPoint(rightTarget->center);
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    closestTarget = rightTarget;
+                }
+            }
+        }
+        validTargetPairs.push_back(new TapeTargetPair(*leftTarget, *closestTarget));
+    }
 
-    int numContours = valid_contour_hulls.size();
-    printf ("Num contours: %d\n", numContours);
+    int minDistanceToCenter = INT_MAX;
+    TapeTargetPair* target;
+    TapeTargetPair* closestToCenter;
+    for (int l = 0; l < (int)validTargetPairs.size(); l++) 
+    {
+        target = validTargetPairs[l];
+        dist = target->xDistanceToPoint(TEST_POINT);
+        if (dist < minDistanceToCenter)
+        {
+            minDistanceToCenter = dist;
+            closestToCenter = target;
+        }
+    }
+
+    int numContours = validTargetPairs.size();
+    printf ("# Target Pairs: %d\n", numContours);
     
     if (numContours < 1) { //definitely did not find 
         return processingFailurePackage(time_began, hue, sat, val);
     }
 
-    //get the points of corners
-    vector<cv::Point> all_points;
-    all_points.insert (all_points.end(), largest.begin(), largest.end());
+    
+    // cv::drawContours(processedImage, largest, 0, MY_GREEN, 2);
+    cv::drawContours(processedImage, valid_contour_hulls, 0, MY_GREEN, 2);
+    // //get the points of corners
+    // vector<cv::Point> all_points;
+    // all_points.insert(largest.begin(), largest.end());
 
-    //find which corner is which
-    cv::Point ul (1000, 1000), ur (0, 1000), ll (1000, 0), lr (0, 0);
-    for (int i = 0; i < (int)all_points.size(); i++) {
-        int sum = all_points[i].x + all_points[i].y;
-        int dif = all_points[i].x - all_points[i].y;
+    // //find which corner is which
+    // cv::Point ul (1000, 1000), ur (0, 1000), ll (1000, 0), lr (0, 0);
+    // for (int i = 0; i < (int)all_points.size(); i++) {
+    //     int sum = all_points[i].x + all_points[i].y;
+    //     int dif = all_points[i].x - all_points[i].y;
 
-        if (sum < ul.x + ul.y) {
-            ul = all_points[i];
-        }
+    //     if (sum < ul.x + ul.y) {
+    //         ul = all_points[i];
+    //     }
 
-        if (sum > lr.x + lr.y) {
-            lr = all_points[i];
-        }
+    //     if (sum > lr.x + lr.y) {
+    //         lr = all_points[i];
+    //     }
 
-        if (dif < ll.x - ll.y) {
-            ll = all_points[i];
-        }
+    //     if (dif < ll.x - ll.y) {
+    //         ll = all_points[i];
+    //     }
 
-        if (dif > ur.x - ur.y) {
-            ur = all_points[i];
-        }
-    } 
+    //     if (dif > ur.x - ur.y) {
+    //         ur = all_points[i];
+    //     }
+    // } 
 
     //find the center of mass of the largest contour
-    cv::Moments centerMass = cv::moments(largest, true);
-    double centerX = (centerMass.m10) / (centerMass.m00);
-    double centerY = (centerMass.m01) / (centerMass.m00);
-    cv::Point center (centerX, centerY);
+    // cv::Moments centerMass = cv::moments(largest, true);
+    // double centerX = (centerMass.m10) / (centerMass.m00);
+    // double centerY = (centerMass.m01) / (centerMass.m00);
+    // cv::Point center (centerX, centerY);
 
-    vector<contour_type> largestArr;
-    largestArr.push_back(largest);
-    // for (int i = 0; i < (int)valid_contour_hulls.size(); i++)
-    // {
-    //     cv::drawContours(processedImage, valid_contour_hulls[i], 0, MY_GREEN, 2);
-    // }
-    cv::drawContours(processedImage, largest, 0, MY_GREEN, 2);
+    // vector<contour_type> largestArr;
+    // largestArr.push_back(largest);
 
-    double top_width = ur.x - ul.x;
-    double bottom_width = lr.x - ll.x;
-    double left_height = ll.y - ul.y;
-    double right_height = lr.y - ur.y;
+    // double top_width = ur.x - ul.x;
+    // double bottom_width = lr.x - ll.x;
+    // double left_height = ll.y - ul.y;
+    // double right_height = lr.y - ur.y;
 
     //create the results package
     VisionResultsPackage res;
     res.timestamp = time_began;
     res.valid = true;
     
-    copyPointData (ul, res.ul);
-    copyPointData (ur, res.ur);
-    copyPointData (ll, res.ll);
-    copyPointData (lr, res.lr);
-    copyPointData (center, res.midPoint);
+    // copyPointData (ul, res.ul);
+    // copyPointData (ur, res.ur);
+    // copyPointData (ll, res.ll);
+    // copyPointData (lr, res.lr);
+    // copyPointData (center, res.midPoint);
 
 
-    res.upperWidth = top_width;
-    res.lowerWidth = bottom_width;
-    res.leftHeight = left_height;
-    res.rightHeight = right_height;
-    res.angleToTarget = angleToTarget(centerX, centerY, 480, 0.86538);
+    // res.upperWidth = top_width;
+    // res.lowerWidth = bottom_width;
+    // res.leftHeight = left_height;
+    // res.rightHeight = right_height;
+    int centerX = closestToCenter->GetCenterX();
+    int centerY = closestToCenter->GetCenterY();
+    printf ("CenterX: %d\nCenterY: %d\n", centerX, centerY);
+
+    // logitech = 0.86538
+    // res.angleToTarget = angleToTarget(centerX, centerY, 480, 0.86538);
+    // microsoft = 0.9975 focal length
+    res.angleToTarget = angleToTarget(centerX, centerY, 1280, 53);
 
     res.sampleHue = hue;
     res.sampleSat = sat;
     res.sampleVal = val;
 
-    drawOnImage (processedImage, res);
+    leftTargets.erase(leftTargets.begin(), leftTargets.begin());
+    rightTargets.erase(rightTargets.begin(), rightTargets.end());
+    validTargetPairs.erase(validTargetPairs.begin(), validTargetPairs.end());
+
+    // delete closestToCenter;
+    // delete valid_contour_hulls;
+    // delete validTargetPairs;
+    // delete leftTargets;
+    // delete rightTargets;
+
+    // drawOnImage (processedImage, res);
     return res;
 }
 

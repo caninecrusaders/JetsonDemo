@@ -15,8 +15,8 @@ void pushToNetworkTables (VisionResultsPackage info);
 //camera parameters
 int 
 device = 0, //bc we are using video0 in this case
-width = 320, 
-height = 240, 
+width = 1280, 
+height = 720, 
 framerate = 15, 
 mjpeg = false; //mjpeg is not better than just grabbing a raw image in this case
 
@@ -25,7 +25,7 @@ int bitrate = 600000, //kbit/sec over network
 port_stream = 5806, //destination port for raw image
 port_thresh = 5805; //destination port for thresholded image
 // string ip = "192.168.0.104"; //destination ip matt's computer
-string ip = "192.168.0.101"; //destination ip vision computer
+string ip = "192.168.0.106"; //destination ip vision computer
 // string ip = "10.49.80.28"; //destination ip roborio
 
 string tableName = "CVResultsTable";
@@ -72,7 +72,7 @@ int main () {
             width, height);
     }
 
-    //open vidoe writer using CvVideoWriter_GStreamer class
+    //open video writer using CvVideoWriter_GStreamer class
     CvVideoWriter_GStreamer mywriter;
     string write_pipeline = create_write_pipeline (width, height, framerate, 
             bitrate, ip, port_thresh);

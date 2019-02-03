@@ -5,11 +5,47 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "type": "chrome",
+            "name": "C++ Launch",
+            "type": "cppdbg",
             "request": "launch",
-            "name": "Launch Chrome against localhost",
-            "url": "http://localhost:8080",
-            "webRoot": "${workspaceFolder}"
+            "program": "${workspaceRoot}/ProcessingAndDrawing/",
+            "miDebuggerServerAddress": "localhost:3000",
+            "args": [],
+            // "stopAtEntry": false,
+            "cwd": "${workspaceRoot}",
+            // "environment": [],
+            "console": "externalTerminal",
+            "linux": {
+              "MIMode": "gdb"
+            },
+            "osx": {
+              "MIMode": "gdb"
+            },
+            "windows": {
+              "MIMode": "gdb"
+            }
         },
+        {
+            "name": "C++ Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/a.out",
+            "stopAtEntry": false,
+            "customLaunchSetupCommands": [
+               { "text": "target-run", "description": "run target", "ignoreFailures": false }
+            ],
+            "launchCompleteCommand": "exec-run",
+            "linux": {
+               "MIMode": "gdb",
+               "miDebuggerPath": "/usr/bin/gdb"
+            },
+            "osx": {
+               "MIMode": "lldb"
+            },
+            "windows": {
+               "MIMode": "gdb",
+               "miDebuggerPath": "C:\\MinGw\\bin\\gdb.exe"
+            }
+         }
     ]
 }
