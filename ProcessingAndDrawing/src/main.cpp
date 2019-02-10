@@ -1,6 +1,7 @@
 #include "helper.hpp"
 #include "gst_pipeline.hpp"
 #include "vision.hpp"
+#include "tapeTargetPair.hpp"
 
 using namespace std;
 
@@ -10,13 +11,13 @@ string netTableAddress = "10.49.80.2"; //address of the rio
 
 //useful for testing OpenCV drawing to see you can modify an image
 void fillCircle (cv::Mat img, int rad, cv::Point center);
-void pushToNetworkTables (VisionResultsPackage info);
+void pushToNetworkTables (TapeTargetPair info);
 
 //camera parameters
 int 
 device = 0, //bc we are using video0 in this case
-width = 1280, 
-height = 720, 
+width = 320, 
+height = 240, 
 framerate = 15, 
 mjpeg = false; //mjpeg is not better than just grabbing a raw image in this case
 
@@ -84,11 +85,6 @@ int main () {
 
     //initialize raw & processed image matrices
     cv::Mat cameraFrame, processedImage;
-
-    if (verbose) {
-        printf ("Data header:\n%s", 
-            VisionResultsPackage::createCSVHeader().c_str());
-    }
     
     HSVMinMax *hsv = new HSVMinMax();
 
@@ -114,13 +110,16 @@ int main () {
             processedImage = cameraFrame;
 
             //process the image, put the information into network tables
-            VisionResultsPackage info = calculate(cameraFrame, processedImage, *hsv);
+            TapeTargetPair* info = calculate(cameraFrame, processedImage, *hsv);
+            if (info == nullptr)
+            {
 
-            pushToNetworkTables (info);
+            }
+            // pushToNetworkTables (info);
           
             //pass the results back out
             IplImage outImage = (IplImage) processedImage;
-            printf ("results string: %s\n", info.createCSVLine().c_str());
+            printf("%s", info->createCSVLine().c_str());
             if (verbose) {
                 printf ("Out image stats: (depth %d), (nchannels %d)\n", 
                     outImage.depth, outImage.nChannels);
@@ -143,12 +142,9 @@ void fillCircle (cv::Mat img, int rad, cv::Point center) {
     cv::circle (img, center, rad, cv::Scalar(0, 0, 255), thickness, lineType);
 }
 
-void pushToNetworkTables (VisionResultsPackage info) {
+void pushToNetworkTables (TapeTargetPair info) {
     myNetworkTable -> PutString ("VisionResults", info.createCSVLine());
     myNetworkTable -> PutString ("VisionResultsHeader", info.createCSVHeader());
-    myNetworkTable -> PutNumber ("Sample Hue", info.sampleHue);
-    myNetworkTable -> PutNumber ("Sample Sat", info.sampleSat);
-    myNetworkTable -> PutNumber ("Sample Val", info.sampleVal);
     myNetworkTable -> Flush();
 }
 

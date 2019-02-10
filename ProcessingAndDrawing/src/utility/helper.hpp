@@ -45,4 +45,6 @@ extern inline ui64 millis_since_epoch() {
     return time;
 }
 
+typedef std::vector<cv::Point> contour_type;
+
 #endif

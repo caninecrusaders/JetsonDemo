@@ -2,12 +2,9 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "build hello world",
-            "type": "shell",
-            "command": "g++",
-            "args": [
-                "-g", "helloworld.cpp"
-            ]
+            "label": "startRemoteDebug",
+            "command": "sh startRemoteDebug.sh", // Could be any other shell command
+            "type": "shell"
         }
     ]
 }

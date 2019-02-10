@@ -4,48 +4,54 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-        {
-            "name": "C++ Launch",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceRoot}/ProcessingAndDrawing/",
-            "miDebuggerServerAddress": "localhost:3000",
-            "args": [],
-            // "stopAtEntry": false,
-            "cwd": "${workspaceRoot}",
-            // "environment": [],
-            "console": "externalTerminal",
-            "linux": {
-              "MIMode": "gdb"
-            },
-            "osx": {
-              "MIMode": "gdb"
-            },
-            "windows": {
-              "MIMode": "gdb"
-            }
-        },
-        {
-            "name": "C++ Launch",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceRoot}/a.out",
-            "stopAtEntry": false,
-            "customLaunchSetupCommands": [
-               { "text": "target-run", "description": "run target", "ignoreFailures": false }
-            ],
-            "launchCompleteCommand": "exec-run",
-            "linux": {
-               "MIMode": "gdb",
-               "miDebuggerPath": "/usr/bin/gdb"
-            },
-            "osx": {
-               "MIMode": "lldb"
-            },
-            "windows": {
-               "MIMode": "gdb",
-               "miDebuggerPath": "C:\\MinGw\\bin\\gdb.exe"
-            }
+      {
+         "name": "C++ Launch",
+         "type": "cppdbg",
+         "request": "launch",
+         // "preLaunchTask": "startRemoteDebug",
+         "sourceFileMap": {
+            "/4980/": "Volumes/4980"
+         },
+         "program": "${workspaceRoot}/ProcessingAndDrawing/gstream_cv",
+         "miDebuggerServerAddress": "localhost:9091",
+         "args": [],
+         "stopAtEntry": false,
+         "cwd": "${workspaceRoot}/ProcessingAndDrawing/",
+         "environment": [],
+         "externalConsole": true,
+         "linux": {
+            "MIMode": "gdb",
+            // "miDebuggerPath": "/usr/bin/gdb"
+         },
+         "osx": {
+            "MIMode": "gdb"
+         },
+         "windows": {
+            "MIMode": "gdb",
+            // "miDebuggerPath": "C:\\MinGw\\bin\\gdb.exe"
          }
+      },
+      {
+         "name": "C++ Launch",
+         "type": "cppdbg",
+         "request": "launch",
+         "program": "${workspaceRoot}/a.out",
+         "stopAtEntry": false,
+         "customLaunchSetupCommands": [
+            { "text": "target-run", "description": "run target", "ignoreFailures": false }
+         ],
+         "launchCompleteCommand": "exec-run",
+         "linux": {
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb"
+         },
+         "osx": {
+            "MIMode": "lldb"
+         },
+         "windows": {
+            "MIMode": "gdb",
+            "miDebuggerPath": "C:\\MinGw\\bin\\gdb.exe"
+         }
+      }
     ]
 }
