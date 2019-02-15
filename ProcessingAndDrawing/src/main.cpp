@@ -11,7 +11,7 @@ string netTableAddress = "10.49.80.2"; //address of the rio
 
 //useful for testing OpenCV drawing to see you can modify an image
 void fillCircle (cv::Mat img, int rad, cv::Point center);
-void pushToNetworkTables (TapeTargetPair info);
+void pushToNetworkTables (TapeTargetPair* info);
 
 //camera parameters
 int 
@@ -111,15 +111,14 @@ int main () {
 
             //process the image, put the information into network tables
             TapeTargetPair* info = calculate(cameraFrame, processedImage, *hsv);
-            if (info == nullptr)
+            if (info)
             {
-
+                pushToNetworkTables(info);
+                printf("%s", info->createCSVLine().c_str());
             }
-            // pushToNetworkTables (info);
           
             //pass the results back out
             IplImage outImage = (IplImage) processedImage;
-            printf("%s", info->createCSVLine().c_str());
             if (verbose) {
                 printf ("Out image stats: (depth %d), (nchannels %d)\n", 
                     outImage.depth, outImage.nChannels);
@@ -142,9 +141,9 @@ void fillCircle (cv::Mat img, int rad, cv::Point center) {
     cv::circle (img, center, rad, cv::Scalar(0, 0, 255), thickness, lineType);
 }
 
-void pushToNetworkTables (TapeTargetPair info) {
-    myNetworkTable -> PutString ("VisionResults", info.createCSVLine());
-    myNetworkTable -> PutString ("VisionResultsHeader", info.createCSVHeader());
+void pushToNetworkTables (TapeTargetPair* info) {
+    myNetworkTable -> PutString ("VisionResults", info->createCSVLine());
+    myNetworkTable -> PutString ("VisionResultsHeader", info->createCSVHeader());
     myNetworkTable -> Flush();
 }
 

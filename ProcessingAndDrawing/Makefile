@@ -15,8 +15,11 @@ all: obj gstream_cv
 obj:
 	@mkdir -p obj/
 
-run: gstream_cv
+debug: gstream_cv
 	gdbserver :9091 ./gstream_cv
+
+run: gstream_cv
+	./gstream_cv
 
 obj/%.o: src/%.cpp
 	@mkdir -p $(dir $@)

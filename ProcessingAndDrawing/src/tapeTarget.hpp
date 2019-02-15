@@ -14,6 +14,11 @@ struct TapeTarget {
         cv::Moments mu = cv::moments(contour, false);
         center = cv::Point2f( mu.m10/mu.m00 , mu.m01/mu.m00 );
     }
+    ~TapeTarget()
+    {
+        contour.erase(contour.begin(), contour.begin());
+
+    }
     double distanceToPoint(cv::Point other) {
         return ((center.x - other.x) * (center.x - other.x)) + ((center.y - other.y)*(center.y - other.y));
     }

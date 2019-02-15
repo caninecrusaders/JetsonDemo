@@ -156,7 +156,7 @@ TapeTargetPair* calculate(const cv::Mat &bgr, cv::Mat &processedImage, HSVMinMax
                 }
             }
         }
-        validTargetPairs.push_back(new TapeTargetPair(*leftTarget, *closestTarget, time_began));
+        validTargetPairs.push_back(new TapeTargetPair(leftTarget, closestTarget, time_began));
     }
 
     if (validTargetPairs.size() < 1) { //definitely did not find 
@@ -173,7 +173,7 @@ TapeTargetPair* calculate(const cv::Mat &bgr, cv::Mat &processedImage, HSVMinMax
         if (dist < minDistanceToCenter)
         {
             minDistanceToCenter = dist;
-            closestToCenter = target;
+            closestToCenter = new TapeTargetPair(target);
         }
     }
 
